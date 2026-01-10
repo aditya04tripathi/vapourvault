@@ -1,0 +1,28 @@
+{
+	"openapi": "3.0.0",
+	"info": {
+		"title": "Template API",
+		"description": "API documentation for the template application",
+		"version": "1.0.0"
+	},
+	"servers": [
+		{
+			"url": "http://localhost:3000",
+			"description": "Development server"
+		}
+	],
+	"components": {
+		"securitySchemes": {
+			"bearer": {
+				"type": "http",
+				"scheme": "bearer",
+				"bearerFormat": "JWT"
+			}
+		}
+	},
+	"security": [
+		{
+			"bearer": []
+		}
+	]
+}

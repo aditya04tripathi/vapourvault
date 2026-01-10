@@ -1,0 +1,30 @@
+### Health Check
+GET http://localhost:3000
+
+### Generate Presigned Upload URL
+POST http://localhost:3000/files/presign-upload
+Content-Type: application/json
+
+{
+  "fileName": "test-image.jpg",
+  "mimeType": "image/jpeg",
+  "size": 1024
+}
+
+### Complete Upload (Need actual uploadKey from presign response)
+POST http://localhost:3000/files/complete-upload
+Content-Type: application/json
+
+{
+  "fileId": "REPLACE_WITH_FILE_ID",
+  "uploadKey": "REPLACE_WITH_UPLOAD_KEY"
+}
+
+### Get File Status
+GET http://localhost:3000/files/REPLACE_WITH_FILE_ID/status
+
+### Get Download URL
+GET http://localhost:3000/files/REPLACE_WITH_FILE_ID/download
+
+### Delete File
+DELETE http://localhost:3000/files/REPLACE_WITH_FILE_ID
