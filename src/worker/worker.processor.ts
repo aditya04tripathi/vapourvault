@@ -1,0 +1,214 @@
+import { Processor, WorkerHost } from '@nestjs/bullmq';
+import { Job } from 'bullmq';
+import { Logger } from '@nestjs/common';
+import { PrismaService } from 'src/prisma/prisma.service';
+import { StorageService } from 'src/storage/storage.service';
+import { FileProcessingJobData } from 'src/queue/queue.service';
+import { FileStatus, JobStatus } from 'src/generated/client';
+import { Readable } from 'stream';
+
+@Processor('file-processing')
+export class FileProcessor extends WorkerHost {
+	private readonly logger = new Logger(FileProcessor.name);
+
+	constructor(
+		private prisma: PrismaService,
+		private storage: StorageService,
+	) {
+		super();
+	}
+
+	async process(job: Job<FileProcessingJobData>) {
+		const { fileId, userId, uploadKey, bucket } = job.data;
+		const startTime = Date.now();
+
+		this.logger.log(`Processing file ${fileId} (job ${job.id})`);
+
+		try {
+			await this.updateJobStatus(fileId, JobStatus.PROCESSING, null, new Date(), null);
+
+			await this.prisma.file.update({
+				where: { id: fileId },
+				data: { status: FileStatus.PROCESSING },
+			});
+
+			const fileStream = await this.storage.getObject(bucket, uploadKey);
+
+			const chunks: Buffer[] = [];
+			for await (const chunk of fileStream as Readable) {
+				chunks.push(chunk);
+			}
+			const fileBuffer = Buffer.concat(chunks);
+
+			const processedData = await this.processFile(fileBuffer, job.data);
+
+			const processedKey = `processed/${userId}/${fileId}/${processedData.fileName}`;
+			const processedBucket = this.storage.getProcessedBucket();
+
+			await this.storage.putObject(processedBucket, processedKey, processedData.buffer);
+
+			await this.prisma.file.update({
+				where: { id: fileId },
+				data: {
+					status: FileStatus.COMPLETED,
+					processedBucket: processedBucket,
+					processedKey: processedKey,
+				},
+			});
+
+			const processingTime = Date.now() - startTime;
+
+			await this.updateJobStatus(fileId, JobStatus.COMPLETED, null, null, new Date(), {
+				processingTimeMs: processingTime,
+				size: fileBuffer.length,
+			});
+
+			this.logger.log(`File ${fileId} processed successfully in ${processingTime}ms`);
+
+			return {
+				success: true,
+				fileId,
+				processingTime,
+			};
+		} catch (error) {
+			const processingTime = Date.now() - startTime;
+			const errorMessage = error.message || 'Unknown error occurred';
+
+			this.logger.error(`Error processing file ${fileId}: ${errorMessage}`, error.stack);
+
+			await this.prisma.file.update({
+				where: { id: fileId },
+				data: { status: FileStatus.FAILED },
+			});
+
+			await this.updateJobStatus(fileId, JobStatus.FAILED, errorMessage, null, new Date(), {
+				processingTimeMs: processingTime,
+			});
+
+			throw error;
+		}
+	}
+
+	private async processFile(
+		buffer: Buffer,
+		jobData: FileProcessingJobData,
+	): Promise<{ buffer: Buffer; fileName: string }> {
+		const file = await this.prisma.file.findUnique({
+			where: { id: jobData.fileId },
+		});
+
+		if (!file) {
+			throw new Error('File not found');
+		}
+
+		const originalName = file.originalName;
+		const extension = originalName.split('.').pop() || 'bin';
+
+		if (file.mimeType.startsWith('image/')) {
+			return this.processImage(buffer, originalName, extension);
+		} else if (file.mimeType.startsWith('text/')) {
+			return this.processText(buffer, originalName, extension);
+		} else {
+			return this.processGeneric(buffer, originalName, extension);
+		}
+	}
+
+	private async processImage(
+		buffer: Buffer,
+		originalName: string,
+		extension: string,
+	): Promise<{ buffer: Buffer; fileName: string }> {
+		const metadata = {
+			type: 'image',
+			originalExtension: extension,
+			processedAt: new Date().toISOString(),
+		};
+
+		const metadataBuffer = Buffer.from(JSON.stringify(metadata, null, 2));
+		const fileName = `processed_${originalName}.json`;
+
+		return {
+			buffer: metadataBuffer,
+			fileName,
+		};
+	}
+
+	private async processText(
+		buffer: Buffer,
+		originalName: string,
+		extension: string,
+	): Promise<{ buffer: Buffer; fileName: string }> {
+		const text = buffer.toString('utf-8');
+		const lines = text.split('\n').length;
+		const words = text.split(/\s+/).filter((w) => w.length > 0).length;
+		const characters = text.length;
+
+		const metadata = {
+			type: 'text',
+			originalExtension: extension,
+			statistics: {
+				lines,
+				words,
+				characters,
+			},
+			processedAt: new Date().toISOString(),
+		};
+
+		const metadataBuffer = Buffer.from(JSON.stringify(metadata, null, 2));
+		const fileName = `processed_${originalName}.json`;
+
+		return {
+			buffer: metadataBuffer,
+			fileName,
+		};
+	}
+
+	private async processGeneric(
+		buffer: Buffer,
+		originalName: string,
+		extension: string,
+	): Promise<{ buffer: Buffer; fileName: string }> {
+		const metadata = {
+			type: 'generic',
+			originalExtension: extension,
+			size: buffer.length,
+			processedAt: new Date().toISOString(),
+		};
+
+		const metadataBuffer = Buffer.from(JSON.stringify(metadata, null, 2));
+		const fileName = `processed_${originalName}.json`;
+
+		return {
+			buffer: metadataBuffer,
+			fileName,
+		};
+	}
+
+	private async updateJobStatus(
+		fileId: string,
+		status: JobStatus,
+		errorMessage: string | null,
+		startedAt: Date | null,
+		completedAt: Date | null,
+		metadata?: any,
+	) {
+		const job = await this.prisma.job.findUnique({
+			where: { fileId },
+		});
+
+		if (!job) {
+			throw new Error(`Job not found for file ${fileId}`);
+		}
+
+		await this.prisma.job.update({
+			where: { fileId },
+			data: {
+				status,
+				errorMessage,
+				startedAt,
+				completedAt,
+				metadata: metadata || job.metadata,
+			},
+		});
+	}
+}
