@@ -1,0 +1,18 @@
+export interface User {
+	id: string;
+	email: string;
+	username?: string;
+	createdAt: Date;
+	updatedAt: Date;
+}
+
+export interface JwtPayload {
+	sub: string;
+	email: string;
+	iat: number;
+}
+
+export interface AuthTokens {
+	accessToken: string;
+	refreshToken?: string;
+}
