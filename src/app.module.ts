@@ -47,4 +47,8 @@ import { GlobalExceptionFilter } from 'src/utils/filters';
 		},
 	],
 })
+/**
+ * Root module of the application.
+ * Configures global imports, providers, and controllers.
+ */
 export class AppModule {}

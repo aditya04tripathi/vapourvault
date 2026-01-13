@@ -2,6 +2,9 @@ import { Injectable } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 
+/**
+ * Interface definition for file processing job data.
+ */
 export interface FileProcessingJobData {
 	fileId: string;
 	userId: string;
@@ -9,6 +12,9 @@ export interface FileProcessingJobData {
 	bucket: string;
 }
 
+/**
+ * Service for managing the file processing job queue.
+ */
 @Injectable()
 export class QueueService {
 	constructor(
@@ -16,6 +22,11 @@ export class QueueService {
 		private readonly fileProcessingQueue: Queue<FileProcessingJobData>,
 	) {}
 
+	/**
+	 * Adds a file processing job to the queue.
+	 * @param data - Job data including file ID and storage paths.
+	 * @returns The created job.
+	 */
 	async addFileProcessingJob(data: FileProcessingJobData) {
 		return await this.fileProcessingQueue.add('process-file', data, {
 			attempts: 3,
@@ -33,6 +44,11 @@ export class QueueService {
 		});
 	}
 
+	/**
+	 * Retrieves the status and progress of a specific job.
+	 * @param jobId - ID of the job.
+	 * @returns Job details object or null if not found.
+	 */
 	async getJobStatus(jobId: string) {
 		const job = await this.fileProcessingQueue.getJob(jobId);
 		if (!job) {

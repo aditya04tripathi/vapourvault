@@ -1,5 +1,8 @@
 import { ApiProperty } from '@nestjs/swagger';
 
+/**
+ * DTO for download URL response.
+ */
 export class DownloadResponseDto {
 	@ApiProperty({
 		description: 'Presigned URL for downloading the file',

@@ -4,6 +4,10 @@ import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
+/**
+ * Bootstrap the NestJS application.
+ * Configures CORS, global validation pipes, Swagger documentation, and starts the server.
+ */
 async function bootstrap() {
 	const app = await NestFactory.create(AppModule);
 	const configService = app.get(ConfigService);

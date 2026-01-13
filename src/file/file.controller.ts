@@ -25,6 +25,9 @@ import {
 
 @ApiTags('files')
 @Controller('files')
+/**
+ * Controller handling file upload, retrieval, and status operations.
+ */
 export class FileController {
 	constructor(private readonly fileService: FileService) {}
 
@@ -38,6 +41,11 @@ export class FileController {
 	})
 	@ApiResponse({ status: 400, description: 'Invalid request data' })
 	@ApiResponse({ status: 401, description: 'Unauthorized' })
+	/**
+	 * Initates a presigned upload session.
+	 * @param dto - Upload parameters.
+	 * @returns Presigned URL.
+	 */
 	async presignUpload(@Body() dto: PresignUploadDto) {
 		return this.fileService.presignUpload(dto);
 	}
@@ -64,6 +72,11 @@ export class FileController {
 		description: 'File uploaded successfully and job enqueued',
 	})
 	@ApiResponse({ status: 400, description: 'Invalid request data' })
+	/**
+	 * Uploads a file directly via form-data.
+	 * @param file - The uploaded file.
+	 * @returns Upload confirmation.
+	 */
 	async uploadFile(@UploadedFile() file: Express.Multer.File) {
 		if (!file) {
 			throw new BadRequestException('File is required');
@@ -83,6 +96,11 @@ export class FileController {
 	@ApiResponse({ status: 401, description: 'Unauthorized' })
 	@ApiResponse({ status: 403, description: 'Forbidden' })
 	@ApiResponse({ status: 404, description: 'File not found' })
+	/**
+	 * Finalizes a presigned upload.
+	 * @param dto - Completion details.
+	 * @returns Completion confirmation.
+	 */
 	async completeUpload(@Body() dto: CompleteUploadDto) {
 		return this.fileService.completeUpload(dto);
 	}
@@ -97,6 +115,11 @@ export class FileController {
 	@ApiResponse({ status: 401, description: 'Unauthorized' })
 	@ApiResponse({ status: 403, description: 'Forbidden' })
 	@ApiResponse({ status: 404, description: 'File not found' })
+	/**
+	 * Gets current status of a file.
+	 * @param fileId - File ID.
+	 * @returns Status object.
+	 */
 	async getFileStatus(@Param('fileId') fileId: string) {
 		return this.fileService.getFileStatus(fileId);
 	}
@@ -112,6 +135,11 @@ export class FileController {
 	@ApiResponse({ status: 401, description: 'Unauthorized' })
 	@ApiResponse({ status: 403, description: 'Forbidden' })
 	@ApiResponse({ status: 404, description: 'File not found' })
+	/**
+	 * Gets a temporary download URL.
+	 * @param fileId - File ID.
+	 * @returns Download URL.
+	 */
 	async getDownloadUrl(@Param('fileId') fileId: string) {
 		return this.fileService.getDownloadUrl(fileId);
 	}
@@ -122,6 +150,10 @@ export class FileController {
 		status: 200,
 		description: 'List of files in storage',
 	})
+	/**
+	 * DEBUG: Lists all files in storage.
+	 * @returns List of objects.
+	 */
 	async listStorageFiles() {
 		return this.fileService.listFilesFromStorage();
 	}
@@ -136,6 +168,11 @@ export class FileController {
 	@ApiResponse({ status: 401, description: 'Unauthorized' })
 	@ApiResponse({ status: 403, description: 'Forbidden' })
 	@ApiResponse({ status: 404, description: 'File not found' })
+	/**
+	 * Deletes a file.
+	 * @param fileId - File ID.
+	 * @returns Success message.
+	 */
 	async deleteFile(@Param('fileId') fileId: string) {
 		return this.fileService.deleteFile(fileId);
 	}

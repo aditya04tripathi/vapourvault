@@ -28,4 +28,7 @@ import { QueueService } from './queue.service';
 	providers: [QueueService],
 	exports: [BullModule, QueueService],
 })
+/**
+ * Module for configuring BullMQ queues.
+ */
 export class QueueModule {}

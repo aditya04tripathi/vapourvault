@@ -2,6 +2,10 @@ import { Injectable, OnModuleInit, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as MinIO from 'minio';
 
+/**
+ * Service for interacting with MinIO object storage.
+ * Handles bucket management and object CRUD operations.
+ */
 @Injectable()
 export class StorageService implements OnModuleInit {
 	private readonly logger = new Logger(StorageService.name);

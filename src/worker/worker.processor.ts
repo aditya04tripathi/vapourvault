@@ -7,6 +7,9 @@ import { FileProcessingJobData } from 'src/queue/queue.service';
 import { FileStatus, JobStatus } from 'src/generated/client';
 import { Readable } from 'stream';
 
+/**
+ * Worker processor for handling file processing jobs from the queue.
+ */
 @Processor('file-processing')
 export class FileProcessor extends WorkerHost {
 	private readonly logger = new Logger(FileProcessor.name);
@@ -18,6 +21,11 @@ export class FileProcessor extends WorkerHost {
 		super();
 	}
 
+	/**
+	 * Main processing method provided by BullMQ.
+	 * @param job - The job instance containing data.
+	 * @returns Processing result.
+	 */
 	async process(job: Job<FileProcessingJobData>) {
 		const { fileId, userId, uploadKey, bucket } = job.data;
 		const startTime = Date.now();
@@ -89,6 +97,12 @@ export class FileProcessor extends WorkerHost {
 		}
 	}
 
+	/**
+	 * Determines processing strategy based on file MIME type.
+	 * @param buffer - File content.
+	 * @param jobData - Job context.
+	 * @returns Processed logic result.
+	 */
 	private async processFile(
 		buffer: Buffer,
 		jobData: FileProcessingJobData,

@@ -1,6 +1,10 @@
 import { ExceptionFilter, Catch, ArgumentsHost, HttpException, HttpStatus } from '@nestjs/common';
 import { Request, Response } from 'express';
 
+/**
+ * Global filter for handling unhandled exceptions.
+ * Formats errors into a consistent JSON response.
+ */
 @Catch()
 export class GlobalExceptionFilter implements ExceptionFilter {
 	catch(exception: unknown, host: ArgumentsHost): void {

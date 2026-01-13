@@ -1,5 +1,8 @@
 import { ApiProperty } from '@nestjs/swagger';
 
+/**
+ * DTO for file status response.
+ */
 export class FileStatusResponseDto {
 	@ApiProperty({
 		description: 'File ID',

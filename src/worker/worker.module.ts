@@ -8,4 +8,7 @@ import { PrismaModule } from 'src/prisma/prisma.module';
 	imports: [QueueModule, StorageModule, PrismaModule],
 	providers: [FileProcessor],
 })
+/**
+ * Module for configuring background worker processors.
+ */
 export class WorkerModule {}

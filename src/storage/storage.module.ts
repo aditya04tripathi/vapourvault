@@ -6,4 +6,7 @@ import { StorageService } from './storage.service';
 	providers: [StorageService],
 	exports: [StorageService],
 })
+/**
+ * Global module for storage services.
+ */
 export class StorageModule {}

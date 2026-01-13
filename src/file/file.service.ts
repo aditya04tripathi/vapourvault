@@ -16,6 +16,9 @@ import {
 import { FileStatus, JobStatus } from '../generated/client';
 import { v4 as uuidv4 } from 'uuid';
 
+/**
+ * Service handling file storage operations, metadata management, and processing job coordination.
+ */
 @Injectable()
 export class FileService {
 	constructor(
@@ -24,10 +27,14 @@ export class FileService {
 		private queue: QueueService,
 	) {}
 
+	/**
+	 * Uploads a file directly, saves metadata, and enqueues a processing job.
+	 * @param file - The file object from Multer.
+	 * @returns Object containing success message and file IDs.
+	 */
 	async uploadFile(file: Express.Multer.File) {
 		const fileId = uuidv4();
 		const extension = file.originalname.split('.').pop();
-		// Use 'anonymous' for userId
 		const uploadKey = `uploads/anonymous/${fileId}/${file.originalname}`;
 		const bucket = this.storage.getUploadsBucket();
 
@@ -45,7 +52,7 @@ export class FileService {
 				originalName: file.originalname,
 				mimeType: file.mimetype,
 				size: file.size,
-				status: FileStatus.UPLOADED, // Directly uploaded
+				status: FileStatus.UPLOADED,
 				uploadBucket: bucket,
 				uploadKey: uploadKey,
 			},
@@ -73,9 +80,13 @@ export class FileService {
 		};
 	}
 
+	/**
+	 * Generates a presigned URL for direct client-to-storage upload.
+	 * @param dto - DTO containing file metadata.
+	 * @returns Presigned URL and file details.
+	 */
 	async presignUpload(dto: PresignUploadDto) {
 		const fileId = uuidv4();
-		// Use 'anonymous' for userId in path since auth is removed
 		const uploadKey = `uploads/anonymous/${fileId}/${dto.fileName}`;
 		const bucket = this.storage.getUploadsBucket();
 
@@ -101,6 +112,11 @@ export class FileService {
 		};
 	}
 
+	/**
+	 * Marks a presigned upload as complete and enqueues a processing job.
+	 * @param dto - DTO containing completion details.
+	 * @returns Object containing success message.
+	 */
 	async completeUpload(dto: CompleteUploadDto) {
 		const file = await this.prisma.file.findUnique({
 			where: { id: dto.fileId },
@@ -127,7 +143,7 @@ export class FileService {
 
 		const job = await this.queue.addFileProcessingJob({
 			fileId: file.id,
-			userId: 'anonymous', // Mock userId for job
+			userId: 'anonymous',
 			uploadKey: file.uploadKey,
 			bucket: file.uploadBucket,
 		});
@@ -147,6 +163,11 @@ export class FileService {
 		};
 	}
 
+	/**
+	 * Retrieves the status of a file and its processing job.
+	 * @param fileId - ID of the file.
+	 * @returns File status DTO.
+	 */
 	async getFileStatus(fileId: string): Promise<FileStatusResponseDto> {
 		const file = await this.prisma.file.findUnique({
 			where: { id: fileId },
@@ -170,6 +191,11 @@ export class FileService {
 		};
 	}
 
+	/**
+	 * Generates a presigned download URL for a file.
+	 * @param fileId - ID of the file.
+	 * @returns Download URL DTO.
+	 */
 	async getDownloadUrl(fileId: string): Promise<DownloadResponseDto> {
 		const file = await this.prisma.file.findUnique({
 			where: { id: fileId },
@@ -196,6 +222,11 @@ export class FileService {
 		};
 	}
 
+	/**
+	 * Deletes a file and its associated data from storage and database.
+	 * @param fileId - ID of the file.
+	 * @returns Success message.
+	 */
 	async deleteFile(fileId: string) {
 		const file = await this.prisma.file.findUnique({
 			where: { id: fileId },
@@ -227,6 +258,10 @@ export class FileService {
 			message: 'File deleted successfully',
 		};
 	}
+	/**
+	 * Lists all files currently in the storage bucket (Debug/Admin).
+	 * @returns List of objects in storage.
+	 */
 	async listFilesFromStorage() {
 		const bucket = this.storage.getUploadsBucket();
 		try {

@@ -6,4 +6,7 @@ import { PrismaService } from 'src/prisma/prisma.service';
 	providers: [PrismaService],
 	exports: [PrismaService],
 })
+/**
+ * Global module for database services.
+ */
 export class PrismaModule {}

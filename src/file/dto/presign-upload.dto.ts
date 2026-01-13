@@ -1,6 +1,9 @@
 import { IsString, IsNotEmpty, IsInt, Min, Max, IsMimeType } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
+/**
+ * DTO for initiating a presigned upload.
+ */
 export class PresignUploadDto {
 	@ApiProperty({
 		description: 'Original file name',

@@ -9,4 +9,7 @@ import { QueueModule } from 'src/queue/queue.module';
 	providers: [FileService],
 	exports: [FileService],
 })
+/**
+ * Module managing file operations, including uploads, downloads, and status checks.
+ */
 export class FileModule {}
