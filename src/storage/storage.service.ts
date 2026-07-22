@@ -1,17 +1,23 @@
 import { Injectable, OnModuleInit, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as MinIO from 'minio';
+import {
+	circuitBreaker,
+	ConsecutiveBreaker,
+	ExponentialBackoff,
+	handleAll,
+	retry,
+	IPolicy,
+} from 'cockatiel';
 
-/**
- * Service for interacting with MinIO object storage.
- * Handles bucket management and object CRUD operations.
- */
 @Injectable()
 export class StorageService implements OnModuleInit {
 	private readonly logger = new Logger(StorageService.name);
 	private minioClient: MinIO.Client;
 	private readonly uploadsBucket = 'uploads';
 	private readonly processedBucket = 'processed';
+	private circuitBreaker: IPolicy;
+	private retryPolicy: IPolicy;
 
 	constructor(private config: ConfigService) {
 		const endpoint = this.config.get<string>('MINIO_ENDPOINT') || 'localhost';
@@ -26,6 +32,18 @@ export class StorageService implements OnModuleInit {
 			useSSL: useSSL,
 			accessKey: accessKey,
 			secretKey: secretKey,
+		});
+
+		// Configure circuit breaker: open after 5 consecutive failures
+		this.circuitBreaker = circuitBreaker(handleAll, {
+			halfOpenAfter: 10000, // 10 seconds
+			breaker: new ConsecutiveBreaker(5), // Open after 5 consecutive failures
+		});
+
+		// Configure retry policy with exponential backoff
+		this.retryPolicy = retry(handleAll, {
+			maxAttempts: 3,
+			backoff: new ExponentialBackoff({ initialDelay: 100, maxDelay: 1000 }),
 		});
 	}
 
@@ -56,8 +74,11 @@ export class StorageService implements OnModuleInit {
 		expiresInSeconds: number = 3600,
 	): Promise<string> {
 		try {
-			const url = await this.minioClient.presignedPutObject(bucket, key, expiresInSeconds);
-			return url;
+			return await this.circuitBreaker.execute(async () => {
+				return await this.retryPolicy.execute(async () => {
+					return await this.minioClient.presignedPutObject(bucket, key, expiresInSeconds);
+				});
+			});
 		} catch (error) {
 			this.logger.error(`Error generating presigned upload URL: ${error.message}`, error.stack);
 			throw error;
@@ -70,8 +91,11 @@ export class StorageService implements OnModuleInit {
 		expiresInSeconds: number = 3600,
 	): Promise<string> {
 		try {
-			const url = await this.minioClient.presignedGetObject(bucket, key, expiresInSeconds);
-			return url;
+			return await this.circuitBreaker.execute(async () => {
+				return await this.retryPolicy.execute(async () => {
+					return await this.minioClient.presignedGetObject(bucket, key, expiresInSeconds);
+				});
+			});
 		} catch (error) {
 			this.logger.error(`Error generating presigned download URL: ${error.message}`, error.stack);
 			throw error;
@@ -80,7 +104,11 @@ export class StorageService implements OnModuleInit {
 
 	async getObject(bucket: string, key: string): Promise<NodeJS.ReadableStream> {
 		try {
-			return await this.minioClient.getObject(bucket, key);
+			return await this.circuitBreaker.execute(async () => {
+				return await this.retryPolicy.execute(async () => {
+					return await this.minioClient.getObject(bucket, key);
+				});
+			});
 		} catch (error) {
 			this.logger.error(`Error getting object: ${error.message}`, error.stack);
 			throw error;
@@ -95,17 +123,21 @@ export class StorageService implements OnModuleInit {
 		metaData?: Record<string, string | number>,
 	): Promise<void> {
 		try {
-			if (typeof data === 'string') {
-				const buffer = Buffer.from(data);
-				await this.minioClient.putObject(bucket, key, buffer, buffer.length, metaData);
-			} else if (data instanceof Buffer) {
-				await this.minioClient.putObject(bucket, key, data, data.length, metaData);
-			} else {
-				if (!size) {
-					throw new Error('Size is required for stream data');
-				}
-				await this.minioClient.putObject(bucket, key, data as any, size, metaData);
-			}
+			await this.circuitBreaker.execute(async () => {
+				return await this.retryPolicy.execute(async () => {
+					if (typeof data === 'string') {
+						const buffer = Buffer.from(data);
+						await this.minioClient.putObject(bucket, key, buffer, buffer.length, metaData);
+					} else if (data instanceof Buffer) {
+						await this.minioClient.putObject(bucket, key, data, data.length, metaData);
+					} else {
+						if (!size) {
+							throw new Error('Size is required for stream data');
+						}
+						await this.minioClient.putObject(bucket, key, data as any, size, metaData);
+					}
+				});
+			});
 		} catch (error) {
 			this.logger.error(`Error putting object: ${error.message}`, error.stack);
 			throw error;
@@ -114,7 +146,11 @@ export class StorageService implements OnModuleInit {
 
 	async deleteObject(bucket: string, key: string): Promise<void> {
 		try {
-			await this.minioClient.removeObject(bucket, key);
+			await this.circuitBreaker.execute(async () => {
+				return await this.retryPolicy.execute(async () => {
+					await this.minioClient.removeObject(bucket, key);
+				});
+			});
 		} catch (error) {
 			this.logger.error(`Error deleting object: ${error.message}`, error.stack);
 			throw error;
