@@ -22,6 +22,7 @@ import {
 	FileStatusResponseDto,
 	DownloadResponseDto,
 } from './dto';
+import { IdempotencyInterceptor } from 'src/common/interceptors/idempotency.interceptor';
 
 @ApiTags('files')
 @Controller('files')
@@ -51,7 +52,7 @@ export class FileController {
 	}
 
 	@Post('upload')
-	@UseInterceptors(FileInterceptor('file'))
+	@UseInterceptors(FileInterceptor('file'), IdempotencyInterceptor)
 	@Throttle({ default: { limit: 10, ttl: 60000 } })
 	@HttpCode(HttpStatus.OK)
 	@ApiOperation({ summary: 'Upload file directly using multipart/form-data' })
@@ -85,6 +86,7 @@ export class FileController {
 	}
 
 	@Post('complete-upload')
+	@UseInterceptors(IdempotencyInterceptor)
 	@Throttle({ default: { limit: 10, ttl: 60000 } })
 	@HttpCode(HttpStatus.OK)
 	@ApiOperation({ summary: 'Mark upload as complete and enqueue processing job' })
