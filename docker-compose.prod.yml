@@ -1,0 +1,40 @@
+# Pull-only. Do not add build:.
+# Image: ghcr.io/aditya04tripathi/vapourvault
+#
+# Private package login:
+#   echo "$GHCR_TOKEN" | docker login ghcr.io -u GITHUB_USERNAME --password-stdin
+#
+#   docker compose -f docker-compose.prod.yml pull
+#   docker compose -f docker-compose.prod.yml up -d
+
+services:
+  api:
+    image: ghcr.io/aditya04tripathi/vapourvault:${IMAGE_TAG:-latest}
+    pull_policy: always
+    container_name: vapourvault-api
+    ports:
+      - '49155:49155'
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+      PORT: 49155
+      RUN_MIGRATIONS: 'true'
+    restart: unless-stopped
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:49155/health']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  worker:
+    image: ghcr.io/aditya04tripathi/vapourvault:${IMAGE_TAG:-latest}
+    pull_policy: always
+    container_name: vapourvault-worker
+    command: node dist/worker
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+      RUN_MIGRATIONS: 'false'
+    restart: unless-stopped
