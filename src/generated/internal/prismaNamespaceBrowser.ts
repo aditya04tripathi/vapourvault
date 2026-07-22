@@ -97,6 +97,9 @@ export const JobScalarFieldEnum = {
   completedAt: 'completedAt',
   retryCount: 'retryCount',
   metadata: 'metadata',
+  checkpoint: 'checkpoint',
+  checkpointData: 'checkpointData',
+  lastCheckpointAt: 'lastCheckpointAt',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const

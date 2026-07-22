@@ -42,6 +42,8 @@ export type JobMinAggregateOutputType = {
   startedAt: Date | null
   completedAt: Date | null
   retryCount: number | null
+  checkpoint: $Enums.JobCheckpoint | null
+  lastCheckpointAt: Date | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -54,6 +56,8 @@ export type JobMaxAggregateOutputType = {
   startedAt: Date | null
   completedAt: Date | null
   retryCount: number | null
+  checkpoint: $Enums.JobCheckpoint | null
+  lastCheckpointAt: Date | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -67,6 +71,9 @@ export type JobCountAggregateOutputType = {
   completedAt: number
   retryCount: number
   metadata: number
+  checkpoint: number
+  checkpointData: number
+  lastCheckpointAt: number
   createdAt: number
   updatedAt: number
   _all: number
@@ -89,6 +96,8 @@ export type JobMinAggregateInputType = {
   startedAt?: true
   completedAt?: true
   retryCount?: true
+  checkpoint?: true
+  lastCheckpointAt?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -101,6 +110,8 @@ export type JobMaxAggregateInputType = {
   startedAt?: true
   completedAt?: true
   retryCount?: true
+  checkpoint?: true
+  lastCheckpointAt?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -114,6 +125,9 @@ export type JobCountAggregateInputType = {
   completedAt?: true
   retryCount?: true
   metadata?: true
+  checkpoint?: true
+  checkpointData?: true
+  lastCheckpointAt?: true
   createdAt?: true
   updatedAt?: true
   _all?: true
@@ -214,6 +228,9 @@ export type JobGroupByOutputType = {
   completedAt: Date | null
   retryCount: number
   metadata: runtime.JsonValue | null
+  checkpoint: $Enums.JobCheckpoint
+  checkpointData: runtime.JsonValue | null
+  lastCheckpointAt: Date | null
   createdAt: Date
   updatedAt: Date
   _count: JobCountAggregateOutputType | null
@@ -250,6 +267,9 @@ export type JobWhereInput = {
   completedAt?: Prisma.DateTimeNullableFilter<"Job"> | Date | string | null
   retryCount?: Prisma.IntFilter<"Job"> | number
   metadata?: Prisma.JsonNullableFilter<"Job">
+  checkpoint?: Prisma.EnumJobCheckpointFilter<"Job"> | $Enums.JobCheckpoint
+  checkpointData?: Prisma.JsonNullableFilter<"Job">
+  lastCheckpointAt?: Prisma.DateTimeNullableFilter<"Job"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"Job"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Job"> | Date | string
   file?: Prisma.XOR<Prisma.FileScalarRelationFilter, Prisma.FileWhereInput>
@@ -264,6 +284,9 @@ export type JobOrderByWithRelationInput = {
   completedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   retryCount?: Prisma.SortOrder
   metadata?: Prisma.SortOrderInput | Prisma.SortOrder
+  checkpoint?: Prisma.SortOrder
+  checkpointData?: Prisma.SortOrderInput | Prisma.SortOrder
+  lastCheckpointAt?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   file?: Prisma.FileOrderByWithRelationInput
@@ -281,6 +304,9 @@ export type JobWhereUniqueInput = Prisma.AtLeast<{
   completedAt?: Prisma.DateTimeNullableFilter<"Job"> | Date | string | null
   retryCount?: Prisma.IntFilter<"Job"> | number
   metadata?: Prisma.JsonNullableFilter<"Job">
+  checkpoint?: Prisma.EnumJobCheckpointFilter<"Job"> | $Enums.JobCheckpoint
+  checkpointData?: Prisma.JsonNullableFilter<"Job">
+  lastCheckpointAt?: Prisma.DateTimeNullableFilter<"Job"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"Job"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Job"> | Date | string
   file?: Prisma.XOR<Prisma.FileScalarRelationFilter, Prisma.FileWhereInput>
@@ -295,6 +321,9 @@ export type JobOrderByWithAggregationInput = {
   completedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   retryCount?: Prisma.SortOrder
   metadata?: Prisma.SortOrderInput | Prisma.SortOrder
+  checkpoint?: Prisma.SortOrder
+  checkpointData?: Prisma.SortOrderInput | Prisma.SortOrder
+  lastCheckpointAt?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   _count?: Prisma.JobCountOrderByAggregateInput
@@ -316,6 +345,9 @@ export type JobScalarWhereWithAggregatesInput = {
   completedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"Job"> | Date | string | null
   retryCount?: Prisma.IntWithAggregatesFilter<"Job"> | number
   metadata?: Prisma.JsonNullableWithAggregatesFilter<"Job">
+  checkpoint?: Prisma.EnumJobCheckpointWithAggregatesFilter<"Job"> | $Enums.JobCheckpoint
+  checkpointData?: Prisma.JsonNullableWithAggregatesFilter<"Job">
+  lastCheckpointAt?: Prisma.DateTimeNullableWithAggregatesFilter<"Job"> | Date | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"Job"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"Job"> | Date | string
 }
@@ -328,6 +360,9 @@ export type JobCreateInput = {
   completedAt?: Date | string | null
   retryCount?: number
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  checkpoint?: $Enums.JobCheckpoint
+  checkpointData?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  lastCheckpointAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   file: Prisma.FileCreateNestedOneWithoutJobInput
@@ -342,6 +377,9 @@ export type JobUncheckedCreateInput = {
   completedAt?: Date | string | null
   retryCount?: number
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  checkpoint?: $Enums.JobCheckpoint
+  checkpointData?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  lastCheckpointAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -354,6 +392,9 @@ export type JobUpdateInput = {
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   retryCount?: Prisma.IntFieldUpdateOperationsInput | number
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  checkpoint?: Prisma.EnumJobCheckpointFieldUpdateOperationsInput | $Enums.JobCheckpoint
+  checkpointData?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  lastCheckpointAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   file?: Prisma.FileUpdateOneRequiredWithoutJobNestedInput
@@ -368,6 +409,9 @@ export type JobUncheckedUpdateInput = {
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   retryCount?: Prisma.IntFieldUpdateOperationsInput | number
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  checkpoint?: Prisma.EnumJobCheckpointFieldUpdateOperationsInput | $Enums.JobCheckpoint
+  checkpointData?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  lastCheckpointAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -381,6 +425,9 @@ export type JobCreateManyInput = {
   completedAt?: Date | string | null
   retryCount?: number
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  checkpoint?: $Enums.JobCheckpoint
+  checkpointData?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  lastCheckpointAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -393,6 +440,9 @@ export type JobUpdateManyMutationInput = {
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   retryCount?: Prisma.IntFieldUpdateOperationsInput | number
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  checkpoint?: Prisma.EnumJobCheckpointFieldUpdateOperationsInput | $Enums.JobCheckpoint
+  checkpointData?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  lastCheckpointAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -406,6 +456,9 @@ export type JobUncheckedUpdateManyInput = {
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   retryCount?: Prisma.IntFieldUpdateOperationsInput | number
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  checkpoint?: Prisma.EnumJobCheckpointFieldUpdateOperationsInput | $Enums.JobCheckpoint
+  checkpointData?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  lastCheckpointAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -424,6 +477,9 @@ export type JobCountOrderByAggregateInput = {
   completedAt?: Prisma.SortOrder
   retryCount?: Prisma.SortOrder
   metadata?: Prisma.SortOrder
+  checkpoint?: Prisma.SortOrder
+  checkpointData?: Prisma.SortOrder
+  lastCheckpointAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -440,6 +496,8 @@ export type JobMaxOrderByAggregateInput = {
   startedAt?: Prisma.SortOrder
   completedAt?: Prisma.SortOrder
   retryCount?: Prisma.SortOrder
+  checkpoint?: Prisma.SortOrder
+  lastCheckpointAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -452,6 +510,8 @@ export type JobMinOrderByAggregateInput = {
   startedAt?: Prisma.SortOrder
   completedAt?: Prisma.SortOrder
   retryCount?: Prisma.SortOrder
+  checkpoint?: Prisma.SortOrder
+  lastCheckpointAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -500,6 +560,10 @@ export type NullableDateTimeFieldUpdateOperationsInput = {
   set?: Date | string | null
 }
 
+export type EnumJobCheckpointFieldUpdateOperationsInput = {
+  set?: $Enums.JobCheckpoint
+}
+
 export type JobCreateWithoutFileInput = {
   id?: string
   status?: $Enums.JobStatus
@@ -508,6 +572,9 @@ export type JobCreateWithoutFileInput = {
   completedAt?: Date | string | null
   retryCount?: number
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  checkpoint?: $Enums.JobCheckpoint
+  checkpointData?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  lastCheckpointAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -520,6 +587,9 @@ export type JobUncheckedCreateWithoutFileInput = {
   completedAt?: Date | string | null
   retryCount?: number
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  checkpoint?: $Enums.JobCheckpoint
+  checkpointData?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  lastCheckpointAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -548,6 +618,9 @@ export type JobUpdateWithoutFileInput = {
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   retryCount?: Prisma.IntFieldUpdateOperationsInput | number
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  checkpoint?: Prisma.EnumJobCheckpointFieldUpdateOperationsInput | $Enums.JobCheckpoint
+  checkpointData?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  lastCheckpointAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -560,6 +633,9 @@ export type JobUncheckedUpdateWithoutFileInput = {
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   retryCount?: Prisma.IntFieldUpdateOperationsInput | number
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  checkpoint?: Prisma.EnumJobCheckpointFieldUpdateOperationsInput | $Enums.JobCheckpoint
+  checkpointData?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  lastCheckpointAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -575,6 +651,9 @@ export type JobSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = ru
   completedAt?: boolean
   retryCount?: boolean
   metadata?: boolean
+  checkpoint?: boolean
+  checkpointData?: boolean
+  lastCheckpointAt?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   file?: boolean | Prisma.FileDefaultArgs<ExtArgs>
@@ -589,6 +668,9 @@ export type JobSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extension
   completedAt?: boolean
   retryCount?: boolean
   metadata?: boolean
+  checkpoint?: boolean
+  checkpointData?: boolean
+  lastCheckpointAt?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   file?: boolean | Prisma.FileDefaultArgs<ExtArgs>
@@ -603,6 +685,9 @@ export type JobSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extension
   completedAt?: boolean
   retryCount?: boolean
   metadata?: boolean
+  checkpoint?: boolean
+  checkpointData?: boolean
+  lastCheckpointAt?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   file?: boolean | Prisma.FileDefaultArgs<ExtArgs>
@@ -617,11 +702,14 @@ export type JobSelectScalar = {
   completedAt?: boolean
   retryCount?: boolean
   metadata?: boolean
+  checkpoint?: boolean
+  checkpointData?: boolean
+  lastCheckpointAt?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type JobOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "fileId" | "status" | "errorMessage" | "startedAt" | "completedAt" | "retryCount" | "metadata" | "createdAt" | "updatedAt", ExtArgs["result"]["job"]>
+export type JobOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "fileId" | "status" | "errorMessage" | "startedAt" | "completedAt" | "retryCount" | "metadata" | "checkpoint" | "checkpointData" | "lastCheckpointAt" | "createdAt" | "updatedAt", ExtArgs["result"]["job"]>
 export type JobInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   file?: boolean | Prisma.FileDefaultArgs<ExtArgs>
 }
@@ -646,6 +734,9 @@ export type $JobPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
     completedAt: Date | null
     retryCount: number
     metadata: runtime.JsonValue | null
+    checkpoint: $Enums.JobCheckpoint
+    checkpointData: runtime.JsonValue | null
+    lastCheckpointAt: Date | null
     createdAt: Date
     updatedAt: Date
   }, ExtArgs["result"]["job"]>
@@ -1080,6 +1171,9 @@ export interface JobFieldRefs {
   readonly completedAt: Prisma.FieldRef<"Job", 'DateTime'>
   readonly retryCount: Prisma.FieldRef<"Job", 'Int'>
   readonly metadata: Prisma.FieldRef<"Job", 'Json'>
+  readonly checkpoint: Prisma.FieldRef<"Job", 'JobCheckpoint'>
+  readonly checkpointData: Prisma.FieldRef<"Job", 'Json'>
+  readonly lastCheckpointAt: Prisma.FieldRef<"Job", 'DateTime'>
   readonly createdAt: Prisma.FieldRef<"Job", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"Job", 'DateTime'>
 }

@@ -13,7 +13,6 @@ datasource db {
   provider = "postgresql"
 }
 
-
 model File {
   id              String     @id @default(cuid())
   originalName    String
@@ -32,21 +31,25 @@ model File {
 }
 
 model Job {
-  id           String    @id @default(cuid())
-  fileId       String    @unique
-  status       JobStatus @default(PENDING)
-  errorMessage String?
-  startedAt    DateTime?
-  completedAt  DateTime?
-  retryCount   Int       @default(0)
-  metadata     Json?
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  id               String        @id @default(cuid())
+  fileId           String        @unique
+  status           JobStatus     @default(PENDING)
+  errorMessage     String?
+  startedAt        DateTime?
+  completedAt      DateTime?
+  retryCount       Int           @default(0)
+  metadata         Json?
+  checkpoint       JobCheckpoint @default(INIT)
+  checkpointData   Json?
+  lastCheckpointAt DateTime?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
 
   file File @relation(fields: [fileId], references: [id], onDelete: Cascade)
 
   @@index([status])
   @@index([fileId])
+  @@index([checkpoint])
 }
 
 enum FileStatus {
@@ -63,4 +66,13 @@ enum JobStatus {
   PROCESSING
   COMPLETED
   FAILED
+}
+
+enum JobCheckpoint {
+  INIT
+  FILE_RETRIEVED
+  FILE_PROCESSED
+  UPLOADED_TO_STORAGE
+  METADATA_UPDATED
+  COMPLETED
 }

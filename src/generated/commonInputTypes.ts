@@ -196,6 +196,13 @@ export type JsonNullableFilterBase<$PrismaModel = never> = {
   not?: runtime.InputJsonValue | Prisma.JsonFieldRefInput<$PrismaModel> | Prisma.JsonNullValueFilter
 }
 
+export type EnumJobCheckpointFilter<$PrismaModel = never> = {
+  equals?: $Enums.JobCheckpoint | Prisma.EnumJobCheckpointFieldRefInput<$PrismaModel>
+  in?: $Enums.JobCheckpoint[] | Prisma.ListEnumJobCheckpointFieldRefInput<$PrismaModel>
+  notIn?: $Enums.JobCheckpoint[] | Prisma.ListEnumJobCheckpointFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumJobCheckpointFilter<$PrismaModel> | $Enums.JobCheckpoint
+}
+
 export type EnumJobStatusWithAggregatesFilter<$PrismaModel = never> = {
   equals?: $Enums.JobStatus | Prisma.EnumJobStatusFieldRefInput<$PrismaModel>
   in?: $Enums.JobStatus[] | Prisma.ListEnumJobStatusFieldRefInput<$PrismaModel>
@@ -245,6 +252,16 @@ export type JsonNullableWithAggregatesFilterBase<$PrismaModel = never> = {
   _count?: Prisma.NestedIntNullableFilter<$PrismaModel>
   _min?: Prisma.NestedJsonNullableFilter<$PrismaModel>
   _max?: Prisma.NestedJsonNullableFilter<$PrismaModel>
+}
+
+export type EnumJobCheckpointWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.JobCheckpoint | Prisma.EnumJobCheckpointFieldRefInput<$PrismaModel>
+  in?: $Enums.JobCheckpoint[] | Prisma.ListEnumJobCheckpointFieldRefInput<$PrismaModel>
+  notIn?: $Enums.JobCheckpoint[] | Prisma.ListEnumJobCheckpointFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumJobCheckpointWithAggregatesFilter<$PrismaModel> | $Enums.JobCheckpoint
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumJobCheckpointFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumJobCheckpointFilter<$PrismaModel>
 }
 
 export type NestedStringFilter<$PrismaModel = never> = {
@@ -418,6 +435,13 @@ export type NestedDateTimeNullableFilter<$PrismaModel = never> = {
   not?: Prisma.NestedDateTimeNullableFilter<$PrismaModel> | Date | string | null
 }
 
+export type NestedEnumJobCheckpointFilter<$PrismaModel = never> = {
+  equals?: $Enums.JobCheckpoint | Prisma.EnumJobCheckpointFieldRefInput<$PrismaModel>
+  in?: $Enums.JobCheckpoint[] | Prisma.ListEnumJobCheckpointFieldRefInput<$PrismaModel>
+  notIn?: $Enums.JobCheckpoint[] | Prisma.ListEnumJobCheckpointFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumJobCheckpointFilter<$PrismaModel> | $Enums.JobCheckpoint
+}
+
 export type NestedEnumJobStatusWithAggregatesFilter<$PrismaModel = never> = {
   equals?: $Enums.JobStatus | Prisma.EnumJobStatusFieldRefInput<$PrismaModel>
   in?: $Enums.JobStatus[] | Prisma.ListEnumJobStatusFieldRefInput<$PrismaModel>
@@ -464,6 +488,16 @@ export type NestedJsonNullableFilterBase<$PrismaModel = never> = {
   gt?: runtime.InputJsonValue | Prisma.JsonFieldRefInput<$PrismaModel>
   gte?: runtime.InputJsonValue | Prisma.JsonFieldRefInput<$PrismaModel>
   not?: runtime.InputJsonValue | Prisma.JsonFieldRefInput<$PrismaModel> | Prisma.JsonNullValueFilter
+}
+
+export type NestedEnumJobCheckpointWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.JobCheckpoint | Prisma.EnumJobCheckpointFieldRefInput<$PrismaModel>
+  in?: $Enums.JobCheckpoint[] | Prisma.ListEnumJobCheckpointFieldRefInput<$PrismaModel>
+  notIn?: $Enums.JobCheckpoint[] | Prisma.ListEnumJobCheckpointFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumJobCheckpointWithAggregatesFilter<$PrismaModel> | $Enums.JobCheckpoint
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumJobCheckpointFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumJobCheckpointFilter<$PrismaModel>
 }
 
 

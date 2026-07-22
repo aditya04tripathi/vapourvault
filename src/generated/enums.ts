@@ -29,3 +29,15 @@ export const JobStatus = {
 } as const
 
 export type JobStatus = (typeof JobStatus)[keyof typeof JobStatus]
+
+
+export const JobCheckpoint = {
+  INIT: 'INIT',
+  FILE_RETRIEVED: 'FILE_RETRIEVED',
+  FILE_PROCESSED: 'FILE_PROCESSED',
+  UPLOADED_TO_STORAGE: 'UPLOADED_TO_STORAGE',
+  METADATA_UPDATED: 'METADATA_UPDATED',
+  COMPLETED: 'COMPLETED'
+} as const
+
+export type JobCheckpoint = (typeof JobCheckpoint)[keyof typeof JobCheckpoint]

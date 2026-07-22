@@ -618,6 +618,9 @@ export const JobScalarFieldEnum = {
   completedAt: 'completedAt',
   retryCount: 'retryCount',
   metadata: 'metadata',
+  checkpoint: 'checkpoint',
+  checkpointData: 'checkpointData',
+  lastCheckpointAt: 'lastCheckpointAt',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
@@ -753,6 +756,20 @@ export type JsonFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'J
  * Reference to a field of type 'QueryMode'
  */
 export type EnumQueryModeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'QueryMode'>
+    
+
+
+/**
+ * Reference to a field of type 'JobCheckpoint'
+ */
+export type EnumJobCheckpointFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'JobCheckpoint'>
+    
+
+
+/**
+ * Reference to a field of type 'JobCheckpoint[]'
+ */
+export type ListEnumJobCheckpointFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'JobCheckpoint[]'>
     
 
 

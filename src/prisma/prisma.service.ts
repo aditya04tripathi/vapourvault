@@ -1,11 +1,7 @@
 import { Injectable } from '@nestjs/common';
-import { PrismaClient } from '../generated/client';
+import { PrismaClient } from 'src/generated/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 
-/**
- * Service for database access using Prisma Client.
- * Manages database connections and query execution.
- */
 @Injectable()
 export class PrismaService extends PrismaClient {
 	constructor() {
