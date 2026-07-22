@@ -4,7 +4,7 @@ import { Logger } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { StorageService } from 'src/storage/storage.service';
 import { FileProcessingJobData } from 'src/queue/queue.service';
-import { FileStatus, JobStatus } from 'src/generated/client';
+import { FileStatus, JobStatus, JobCheckpoint } from 'src/generated/client';
 import { Readable } from 'stream';
 
 /**
@@ -23,6 +23,7 @@ export class FileProcessor extends WorkerHost {
 
 	/**
 	 * Main processing method provided by BullMQ.
+	 * Implements checkpoint-based processing for recovery.
 	 * @param job - The job instance containing data.
 	 * @returns Processing result.
 	 */
@@ -33,6 +34,14 @@ export class FileProcessor extends WorkerHost {
 		this.logger.log(`Processing file ${fileId} (job ${job.id})`);
 
 		try {
+			// Get current job state to check for resumable processing
+			const jobRecord = await this.prisma.job.findUnique({
+				where: { fileId },
+			});
+
+			const currentCheckpoint = jobRecord?.checkpoint || JobCheckpoint.INIT;
+			this.logger.log(`Starting from checkpoint: ${currentCheckpoint}`);
+
 			await this.updateJobStatus(fileId, JobStatus.PROCESSING, null, new Date(), null);
 
 			await this.prisma.file.update({
@@ -40,36 +49,99 @@ export class FileProcessor extends WorkerHost {
 				data: { status: FileStatus.PROCESSING },
 			});
 
-			const fileStream = await this.storage.getObject(bucket, uploadKey);
+			let fileBuffer: Buffer;
+			let processedData: { buffer: Buffer; fileName: string };
+			let processedKey: string;
+			let processedBucket: string;
 
-			const chunks: Buffer[] = [];
-			for await (const chunk of fileStream as Readable) {
-				chunks.push(chunk);
+			// Checkpoint 1: Retrieve file from storage
+			if (currentCheckpoint === JobCheckpoint.INIT) {
+				this.logger.log(`Checkpoint: Retrieving file from storage`);
+				const fileStream = await this.storage.getObject(bucket, uploadKey);
+
+				const chunks: Buffer[] = [];
+				for await (const chunk of fileStream as Readable) {
+					chunks.push(chunk);
+				}
+				fileBuffer = Buffer.concat(chunks);
+
+				await this.saveCheckpoint(fileId, JobCheckpoint.FILE_RETRIEVED, {
+					fileSize: fileBuffer.length,
+				});
+			} else {
+				// Retrieve from storage again (checkpoint data doesn't store buffer)
+				const fileStream = await this.storage.getObject(bucket, uploadKey);
+				const chunks: Buffer[] = [];
+				for await (const chunk of fileStream as Readable) {
+					chunks.push(chunk);
+				}
+				fileBuffer = Buffer.concat(chunks);
 			}
-			const fileBuffer = Buffer.concat(chunks);
 
-			const processedData = await this.processFile(fileBuffer, job.data);
+			// Checkpoint 2: Process file
+			if (
+				currentCheckpoint === JobCheckpoint.INIT ||
+				currentCheckpoint === JobCheckpoint.FILE_RETRIEVED
+			) {
+				this.logger.log(`Checkpoint: Processing file`);
+				processedData = await this.processFile(fileBuffer, job.data);
 
-			const processedKey = `processed/${userId}/${fileId}/${processedData.fileName}`;
-			const processedBucket = this.storage.getProcessedBucket();
+				await this.saveCheckpoint(fileId, JobCheckpoint.FILE_PROCESSED, {
+					processedFileName: processedData.fileName,
+				});
+			} else {
+				processedData = await this.processFile(fileBuffer, job.data);
+			}
 
-			await this.storage.putObject(processedBucket, processedKey, processedData.buffer);
+			// Checkpoint 3: Upload processed data to storage
+			if (
+				currentCheckpoint === JobCheckpoint.INIT ||
+				currentCheckpoint === JobCheckpoint.FILE_RETRIEVED ||
+				currentCheckpoint === JobCheckpoint.FILE_PROCESSED
+			) {
+				this.logger.log(`Checkpoint: Uploading to storage`);
+				processedKey = `processed/${userId}/${fileId}/${processedData.fileName}`;
+				processedBucket = this.storage.getProcessedBucket();
 
-			await this.prisma.file.update({
-				where: { id: fileId },
-				data: {
-					status: FileStatus.COMPLETED,
-					processedBucket: processedBucket,
-					processedKey: processedKey,
-				},
-			});
+				await this.storage.putObject(processedBucket, processedKey, processedData.buffer);
+
+				await this.saveCheckpoint(fileId, JobCheckpoint.UPLOADED_TO_STORAGE, {
+					processedKey,
+					processedBucket,
+				});
+			} else {
+				const cpData = jobRecord?.checkpointData as any;
+				processedKey = cpData?.processedKey;
+				processedBucket = cpData?.processedBucket;
+			}
+
+			// Checkpoint 4: Update file metadata
+			if (
+				currentCheckpoint !== JobCheckpoint.METADATA_UPDATED &&
+				currentCheckpoint !== JobCheckpoint.COMPLETED
+			) {
+				this.logger.log(`Checkpoint: Updating metadata`);
+				await this.prisma.file.update({
+					where: { id: fileId },
+					data: {
+						status: FileStatus.COMPLETED,
+						processedBucket: processedBucket,
+						processedKey: processedKey,
+					},
+				});
+
+				await this.saveCheckpoint(fileId, JobCheckpoint.METADATA_UPDATED, {});
+			}
 
 			const processingTime = Date.now() - startTime;
 
+			// Final checkpoint: Mark as completed
 			await this.updateJobStatus(fileId, JobStatus.COMPLETED, null, null, new Date(), {
 				processingTimeMs: processingTime,
 				size: fileBuffer.length,
 			});
+
+			await this.saveCheckpoint(fileId, JobCheckpoint.COMPLETED, {});
 
 			this.logger.log(`File ${fileId} processed successfully in ${processingTime}ms`);
 
@@ -224,5 +296,24 @@ export class FileProcessor extends WorkerHost {
 				metadata: metadata || job.metadata,
 			},
 		});
+	}
+
+	/**
+	 * Save a checkpoint for a job to enable recovery from failures.
+	 * @param fileId - File ID
+	 * @param checkpoint - Checkpoint identifier
+	 * @param data - Checkpoint data to persist
+	 */
+	private async saveCheckpoint(fileId: string, checkpoint: JobCheckpoint, data: any) {
+		await this.prisma.job.update({
+			where: { fileId },
+			data: {
+				checkpoint,
+				checkpointData: data,
+				lastCheckpointAt: new Date(),
+			},
+		});
+
+		this.logger.log(`Checkpoint saved: ${checkpoint} for file ${fileId}`);
 	}
 }
