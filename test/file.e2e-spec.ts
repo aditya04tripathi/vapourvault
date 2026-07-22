@@ -31,12 +31,10 @@ describe('FileController (e2e)', () => {
 		});
 		userId = user.id;
 
-		const loginResponse = await request(app.getHttpServer())
-			.post('/auth/login')
-			.send({
-				email: 'test@example.com',
-				password: 'password123',
-			});
+		const loginResponse = await request(app.getHttpServer()).post('/auth/login').send({
+			email: 'test@example.com',
+			password: 'password123',
+		});
 
 		authToken = loginResponse.body.access_token;
 	});
