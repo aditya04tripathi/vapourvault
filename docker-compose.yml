@@ -14,7 +14,7 @@ services:
     networks:
       - dev-network
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U user']
+      test: ['CMD-SHELL', 'pg_isready -U user -d template_db -h localhost -p 5432']
       interval: 10s
       timeout: 5s
       retries: 5
@@ -60,18 +60,11 @@ services:
       dockerfile: Dockerfile
     container_name: file-storage-api
     ports:
-      - '3000:3000'
+      - '49155:49155'
+    env_file:
+      - .env.docker
     environment:
-      DATABASE_URL: postgresql://user:password@dev-db:5432/template_db
-      REDIS_URL: redis://redis:6379
-      MINIO_ENDPOINT: minio
-      MINIO_PORT: 9000
-      MINIO_USE_SSL: 'false'
-      MINIO_ACCESS_KEY: minioadmin
-      MINIO_SECRET_KEY: minioadmin
-      JWT_SECRET: your-secret-key-change-in-production
-      PORT: 3000
-      CORS_ORIGIN: http://localhost:3000
+      RUN_MIGRATIONS: 'true'
     depends_on:
       dev-db:
         condition: service_healthy
@@ -82,7 +75,7 @@ services:
     networks:
       - dev-network
     healthcheck:
-      test: ['CMD', 'curl', '-f', 'http://localhost:3000/health']
+      test: ['CMD', 'curl', '-f', 'http://localhost:49155/health']
       interval: 30s
       timeout: 10s
       retries: 3
@@ -92,16 +85,11 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: file-storage-worker
-    command: npm run start:worker
+    command: node dist/worker
+    env_file:
+      - .env.docker
     environment:
-      DATABASE_URL: postgresql://user:password@dev-db:5432/template_db
-      REDIS_URL: redis://redis:6379
-      MINIO_ENDPOINT: minio
-      MINIO_PORT: 9000
-      MINIO_USE_SSL: 'false'
-      MINIO_ACCESS_KEY: minioadmin
-      MINIO_SECRET_KEY: minioadmin
-      JWT_SECRET: your-secret-key-change-in-production
+      RUN_MIGRATIONS: 'false'
     depends_on:
       dev-db:
         condition: service_healthy
@@ -112,10 +100,82 @@ services:
     networks:
       - dev-network
 
+  # Observability Stack
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: file-storage-prometheus
+    ports:
+      - '9090:9090'
+    volumes:
+      - ./observability/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+    networks:
+      - dev-network
+    healthcheck:
+      test: ['CMD', 'wget', '-q', '--spider', 'http://localhost:9090/-/healthy']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: file-storage-grafana
+    ports:
+      - '3001:3000'
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - ./observability/grafana/provisioning:/etc/grafana/provisioning
+      - ./observability/grafana/dashboards:/var/lib/grafana/dashboards
+      - grafana_data:/var/lib/grafana
+    depends_on:
+      - prometheus
+    networks:
+      - dev-network
+    healthcheck:
+      test: ['CMD', 'wget', '-q', '--spider', 'http://localhost:3000/api/health']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    container_name: file-storage-jaeger
+    ports:
+      - '6831:6831/udp'
+      - '6832:6832/udp'
+      - '5778:5778'
+      - '16686:16686'
+      - '4317:4317'
+      - '4318:4318'
+      - '14250:14250'
+      - '14268:14268'
+      - '14269:14269'
+      - '9411:9411'
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
+      - LOG_LEVEL=debug
+    networks:
+      - dev-network
+    healthcheck:
+      test: ['CMD', 'wget', '-q', '--spider', 'http://localhost:14269/']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
 volumes:
   postgres_data:
   redis_data:
   minio_data:
+  prometheus_data:
+  grafana_data:
 
 networks:
   dev-network:
