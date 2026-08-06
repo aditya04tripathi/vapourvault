@@ -33,4 +33,4 @@ RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 USER nestjs
 EXPOSE 49156
 ENTRYPOINT ["docker-entrypoint.sh"]
-CMD ["node", "dist/main"]
+CMD ["node", "dist/src/main.js"]

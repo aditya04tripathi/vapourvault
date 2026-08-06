@@ -94,7 +94,7 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: vapourvault-worker
-    command: node dist/worker
+    command: node dist/src/worker.js
     env_file:
       - .env.docker
     environment:

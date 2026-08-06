@@ -104,7 +104,7 @@ services:
     image: ghcr.io/aditya04tripathi/vapour-vault:${IMAGE_TAG:-latest}
     pull_policy: always
     container_name: vapourvault-worker
-    command: node dist/worker
+    command: node dist/src/worker.js
     env_file:
       - .env
     environment:
