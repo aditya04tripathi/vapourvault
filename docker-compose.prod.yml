@@ -67,12 +67,13 @@ services:
     pull_policy: always
     container_name: vapourvault-api
     ports:
-      - '49156:49156'
+      - '0.0.0.0:49156:49156'
     env_file:
       - .env
     environment:
       NODE_ENV: production
       PORT: 49156
+      HOST: 0.0.0.0
       RUN_MIGRATIONS: 'true'
       DATABASE_URL: postgresql://${POSTGRES_USER:-user}:${POSTGRES_PASSWORD:-password}@postgres:5432/${POSTGRES_DB:-vapourvault}
       REDIS_URL: redis://redis:6379
@@ -110,6 +111,7 @@ services:
     environment:
       NODE_ENV: production
       PORT: 49156
+      HOST: 0.0.0.0
       RUN_MIGRATIONS: 'false'
       DATABASE_URL: postgresql://${POSTGRES_USER:-user}:${POSTGRES_PASSWORD:-password}@postgres:5432/${POSTGRES_DB:-vapourvault}
       REDIS_URL: redis://redis:6379

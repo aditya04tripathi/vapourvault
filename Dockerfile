@@ -17,6 +17,7 @@ RUN corepack enable && corepack prepare pnpm@latest --activate \
 FROM base AS production
 ENV NODE_ENV=production
 ENV PORT=49156
+ENV HOST=0.0.0.0
 
 RUN addgroup --system --gid 1001 nodejs \
   && adduser --system --uid 1001 nestjs \

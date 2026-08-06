@@ -66,9 +66,10 @@ async function bootstrap() {
 	SwaggerModule.setup('api', app, documentFactory, customOptions);
 
 	const port = configService.get('PORT') || 3000;
-	await app.listen(port);
+	const host = configService.get('HOST') || '0.0.0.0';
+	await app.listen(port, host);
 
 	const logger = app.get(Logger);
-	logger.log(`Application is running on: http://localhost:${port}`);
+	logger.log(`Application is running on: http://${host}:${port}`);
 }
 bootstrap();
