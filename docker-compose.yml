@@ -55,8 +55,8 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: vapourvault-api
-    expose:
-      - '49156'
+    ports:
+      - '49156:49156'
     env_file:
       - .env.docker
     environment:
@@ -81,7 +81,6 @@ services:
       minio:
         condition: service_healthy
     networks:
-      - cloudflare-edge
       - app-internal
     restart: unless-stopped
     healthcheck:
@@ -120,16 +119,6 @@ services:
         condition: service_healthy
     networks:
       - app-internal
-    restart: unless-stopped
-
-  cloudflared:
-    image: cloudflare/cloudflared:latest
-    container_name: vapourvault-cloudflared
-    command: tunnel --no-autoupdate run
-    depends_on:
-      api:
-        condition: service_healthy
-    network_mode: service:api
     restart: unless-stopped
 
   prometheus:
@@ -194,8 +183,6 @@ volumes:
   grafana_data:
 
 networks:
-  cloudflare-edge:
-    driver: bridge
   app-internal:
     driver: bridge
     internal: true

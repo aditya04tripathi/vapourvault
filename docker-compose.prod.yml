@@ -1,9 +1,6 @@
 # Pull-only for the application image. Do not add build:.
 # Image: ghcr.io/aditya04tripathi/vapourvault
 #
-# Cloudflare Tunnel setup:
-#   In Cloudflare Zero Trust, route the tunnel origin to http://localhost:49156.
-#
 # Private package login:
 #   echo "$GHCR_TOKEN" | docker login ghcr.io -u GITHUB_USERNAME --password-stdin
 #
@@ -66,11 +63,11 @@ services:
       retries: 3
 
   api:
-    image: ghcr.io/aditya04tripathi/vapour-vault:${IMAGE_TAG:-latest}
+    image: ghcr.io/aditya04tripathi/vapourvault:${IMAGE_TAG:-latest}
     pull_policy: always
     container_name: vapourvault-api
-    expose:
-      - '49156'
+    ports:
+      - '49156:49156'
     env_file:
       - .env
     environment:
@@ -95,7 +92,6 @@ services:
       minio:
         condition: service_healthy
     networks:
-      - cloudflare-edge
       - app-internal
     restart: unless-stopped
     healthcheck:
@@ -135,16 +131,6 @@ services:
       - app-internal
     restart: unless-stopped
 
-  cloudflared:
-    image: cloudflare/cloudflared:latest
-    container_name: vapourvault-cloudflared
-    command: tunnel --no-autoupdate run
-    depends_on:
-      api:
-        condition: service_healthy
-    network_mode: service:api
-    restart: unless-stopped
-
   jaeger:
     image: jaegertracing/all-in-one:latest
     container_name: vapourvault-jaeger
@@ -166,8 +152,6 @@ volumes:
   minio_data:
 
 networks:
-  cloudflare-edge:
-    driver: bridge
   app-internal:
     driver: bridge
     internal: true
