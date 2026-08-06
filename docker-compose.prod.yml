@@ -2,8 +2,7 @@
 # Image: ghcr.io/aditya04tripathi/vapourvault
 #
 # Cloudflare Tunnel setup:
-#   1. Set CLOUDFLARED_TOKEN in .env.
-#   2. In Cloudflare Zero Trust, route the tunnel origin to http://localhost:49156.
+#   In Cloudflare Zero Trust, route the tunnel origin to http://localhost:49156.
 #
 # Private package login:
 #   echo "$GHCR_TOKEN" | docker login ghcr.io -u GITHUB_USERNAME --password-stdin
@@ -139,7 +138,7 @@ services:
   cloudflared:
     image: cloudflare/cloudflared:latest
     container_name: vapourvault-cloudflared
-    command: tunnel --no-autoupdate run --token ${CLOUDFLARED_TOKEN:?Set CLOUDFLARED_TOKEN in .env}
+    command: tunnel --no-autoupdate run
     depends_on:
       api:
         condition: service_healthy
