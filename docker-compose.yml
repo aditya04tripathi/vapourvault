@@ -82,6 +82,7 @@ services:
       minio:
         condition: service_healthy
     networks:
+      - app-public
       - app-internal
     restart: unless-stopped
     healthcheck:
@@ -185,6 +186,8 @@ volumes:
   grafana_data:
 
 networks:
+  app-public:
+    driver: bridge
   app-internal:
     driver: bridge
     internal: true

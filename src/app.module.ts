@@ -15,6 +15,7 @@ import { GlobalExceptionFilter } from 'src/utils/filters';
 import { pinoLoggerConfig } from 'src/config/logger.config';
 import { MetricsModule } from 'src/metrics/metrics.module';
 import { HealthModule } from 'src/health/health.module';
+import { AppController } from './app.controller';
 
 @Module({
 	imports: [
@@ -38,7 +39,7 @@ import { HealthModule } from 'src/health/health.module';
 		FileModule,
 		WorkerModule,
 	],
-	controllers: [],
+	controllers: [AppController],
 	providers: [
 		CleanupService,
 		{
