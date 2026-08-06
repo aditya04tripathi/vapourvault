@@ -29,10 +29,10 @@
 		"pr-ready": "npm run lint && npm run format:check && npm run test && npm run build",
 		"format:check": "prettier --check \"src/**/*.ts\" \"test/**/*.ts\"",
 		"docker:build": "docker build -t vapourvault:local .",
-		"docker:up": "docker compose up --build -d && echo http://localhost:49155",
+		"docker:up": "docker compose up --build -d && echo Cloudflare origin: http://localhost:49156",
 		"docker:down": "docker compose down",
 		"docker:prod:pull": "docker compose -f docker-compose.prod.yml pull",
-		"docker:prod:up": "docker compose -f docker-compose.prod.yml up -d && echo http://localhost:49155",
+		"docker:prod:up": "docker compose -f docker-compose.prod.yml up -d && echo Cloudflare origin: http://localhost:49156",
 		"docker:prod:down": "docker compose -f docker-compose.prod.yml down"
 	},
 	"dependencies": {

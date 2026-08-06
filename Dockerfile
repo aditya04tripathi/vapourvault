@@ -16,7 +16,7 @@ RUN corepack enable && corepack prepare pnpm@latest --activate \
 
 FROM base AS production
 ENV NODE_ENV=production
-ENV PORT=49155
+ENV PORT=49156
 
 RUN addgroup --system --gid 1001 nodejs \
   && adduser --system --uid 1001 nestjs \
@@ -31,6 +31,6 @@ COPY docker-entrypoint.sh /usr/local/bin/
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
 USER nestjs
-EXPOSE 49155
+EXPOSE 49156
 ENTRYPOINT ["docker-entrypoint.sh"]
 CMD ["node", "dist/main"]

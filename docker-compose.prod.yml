@@ -1,5 +1,9 @@
-# Pull-only. Do not add build:.
+# Pull-only for the application image. Do not add build:.
 # Image: ghcr.io/aditya04tripathi/vapourvault
+#
+# Cloudflare Tunnel setup:
+#   1. Set CLOUDFLARED_TOKEN in .env.
+#   2. In Cloudflare Zero Trust, route the tunnel origin to http://localhost:49156.
 #
 # Private package login:
 #   echo "$GHCR_TOKEN" | docker login ghcr.io -u GITHUB_USERNAME --password-stdin
@@ -8,21 +12,95 @@
 #   docker compose -f docker-compose.prod.yml up -d
 
 services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: vapourvault-postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
+      POSTGRES_DB: ${POSTGRES_DB:-vapourvault}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - app-internal
+    restart: unless-stopped
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'pg_isready -U "$$POSTGRES_USER" -d "$$POSTGRES_DB" -h localhost -p 5432',
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:alpine
+    container_name: vapourvault-redis
+    volumes:
+      - redis_data:/data
+    networks:
+      - app-internal
+    restart: unless-stopped
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  minio:
+    image: minio/minio
+    container_name: vapourvault-minio
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY:-minioadmin}
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio_data:/data
+    networks:
+      - app-internal
+    restart: unless-stopped
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:9000/minio/health/live']
+      interval: 30s
+      timeout: 20s
+      retries: 3
+
   api:
     image: ghcr.io/aditya04tripathi/vapourvault:${IMAGE_TAG:-latest}
     pull_policy: always
     container_name: vapourvault-api
-    ports:
-      - '49155:49155'
+    expose:
+      - '49156'
     env_file:
       - .env
     environment:
       NODE_ENV: production
-      PORT: 49155
+      PORT: 49156
       RUN_MIGRATIONS: 'true'
+      DATABASE_URL: postgresql://${POSTGRES_USER:-user}:${POSTGRES_PASSWORD:-password}@postgres:5432/${POSTGRES_DB:-vapourvault}
+      REDIS_URL: redis://redis:6379
+      MINIO_ENDPOINT: minio
+      MINIO_PORT: 9000
+      MINIO_USE_SSL: 'false'
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-minioadmin}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-minioadmin}
+      ENABLE_TRACING: ${ENABLE_TRACING:-false}
+      JAEGER_ENDPOINT: http://jaeger:14268/api/traces
+      CORS_ORIGIN: ${CORS_ORIGIN:-}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    networks:
+      - cloudflare-edge
+      - app-internal
     restart: unless-stopped
     healthcheck:
-      test: ['CMD', 'curl', '-f', 'http://localhost:49155/health']
+      test: ['CMD', 'curl', '-f', 'http://localhost:49156/health']
       interval: 30s
       timeout: 10s
       retries: 3
@@ -36,5 +114,61 @@ services:
       - .env
     environment:
       NODE_ENV: production
+      PORT: 49156
       RUN_MIGRATIONS: 'false'
+      DATABASE_URL: postgresql://${POSTGRES_USER:-user}:${POSTGRES_PASSWORD:-password}@postgres:5432/${POSTGRES_DB:-vapourvault}
+      REDIS_URL: redis://redis:6379
+      MINIO_ENDPOINT: minio
+      MINIO_PORT: 9000
+      MINIO_USE_SSL: 'false'
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-minioadmin}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-minioadmin}
+      ENABLE_TRACING: ${ENABLE_TRACING:-false}
+      JAEGER_ENDPOINT: http://jaeger:14268/api/traces
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    networks:
+      - app-internal
     restart: unless-stopped
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: vapourvault-cloudflared
+    command: tunnel --no-autoupdate run --token ${CLOUDFLARED_TOKEN:?Set CLOUDFLARED_TOKEN in .env}
+    depends_on:
+      api:
+        condition: service_healthy
+    network_mode: service:api
+    restart: unless-stopped
+
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    container_name: vapourvault-jaeger
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
+      - LOG_LEVEL=debug
+    networks:
+      - app-internal
+    restart: unless-stopped
+    healthcheck:
+      test: ['CMD', 'wget', '-q', '--spider', 'http://localhost:14269/']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  postgres_data:
+  redis_data:
+  minio_data:
+
+networks:
+  cloudflare-edge:
+    driver: bridge
+  app-internal:
+    driver: bridge
+    internal: true
