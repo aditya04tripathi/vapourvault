@@ -1,5 +1,5 @@
 # Pull-only for the application image. Do not add build:.
-# Image: ghcr.io/aditya04tripathi/vapourvault
+# Image: ghcr.io/aditya04tripathi/vapour-vault
 #
 # Private package login:
 #   echo "$GHCR_TOKEN" | docker login ghcr.io -u GITHUB_USERNAME --password-stdin
@@ -63,7 +63,7 @@ services:
       retries: 3
 
   api:
-    image: ghcr.io/aditya04tripathi/vapourvault:${IMAGE_TAG:-latest}
+    image: ghcr.io/aditya04tripathi/vapour-vault:${IMAGE_TAG:-latest}
     pull_policy: always
     container_name: vapourvault-api
     ports:
@@ -101,7 +101,7 @@ services:
       retries: 3
 
   worker:
-    image: ghcr.io/aditya04tripathi/vapourvault:${IMAGE_TAG:-latest}
+    image: ghcr.io/aditya04tripathi/vapour-vault:${IMAGE_TAG:-latest}
     pull_policy: always
     container_name: vapourvault-worker
     command: node dist/worker
