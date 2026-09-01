@@ -56,12 +56,12 @@ services:
       dockerfile: Dockerfile
     container_name: vapourvault-api
     ports:
-      - '0.0.0.0:49156:49156'
+      - '0.0.0.0:49156:3000'
     env_file:
       - .env.docker
     environment:
       NODE_ENV: production
-      PORT: 49156
+      PORT: 3000
       HOST: 0.0.0.0
       RUN_MIGRATIONS: 'true'
       DATABASE_URL: postgresql://${POSTGRES_USER:-user}:${POSTGRES_PASSWORD:-password}@postgres:5432/${POSTGRES_DB:-vapourvault}
@@ -86,7 +86,7 @@ services:
       - app-internal
     restart: unless-stopped
     healthcheck:
-      test: ['CMD', 'curl', '-f', 'http://localhost:49156/health']
+      test: ['CMD', 'curl', '-f', 'http://localhost:3000/health']
       interval: 30s
       timeout: 10s
       retries: 3
@@ -101,7 +101,7 @@ services:
       - .env.docker
     environment:
       NODE_ENV: production
-      PORT: 49156
+      PORT: 3000
       HOST: 0.0.0.0
       RUN_MIGRATIONS: 'false'
       DATABASE_URL: postgresql://${POSTGRES_USER:-user}:${POSTGRES_PASSWORD:-password}@postgres:5432/${POSTGRES_DB:-vapourvault}
