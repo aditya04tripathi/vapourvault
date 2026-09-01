@@ -8,6 +8,7 @@ import { Observable } from "rxjs";
 import { tap } from "rxjs/operators";
 import { Request, Response } from "express";
 import { MetricsService } from "./metrics.service";
+import { shouldSkipRoute } from "./metrics.util";
 
 @Injectable()
 export class MetricsInterceptor implements NestInterceptor {
@@ -19,6 +20,10 @@ export class MetricsInterceptor implements NestInterceptor {
 		const res = http.getResponse<Response>();
 		const start = Date.now();
 		const route = req.route?.path ?? req.path ?? "unknown";
+
+		if (shouldSkipRoute(route)) {
+			return next.handle();
+		}
 
 		return next.handle().pipe(
 			tap({
