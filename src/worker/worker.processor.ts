@@ -1,16 +1,17 @@
-import { Processor, WorkerHost } from '@nestjs/bullmq';
-import { Job } from 'bullmq';
-import { Logger } from '@nestjs/common';
-import { PrismaService } from 'src/prisma/prisma.service';
-import { StorageService } from 'src/storage/storage.service';
-import { FileProcessingJobData } from 'src/queue/queue.service';
-import { FileStatus, JobStatus, JobCheckpoint } from 'src/generated/client';
-import { Readable } from 'stream';
+import { Processor, WorkerHost } from "@nestjs/bullmq";
+import { Job } from "bullmq";
+import { Logger } from "@nestjs/common";
+import { PrismaService } from "src/prisma/prisma.service";
+import { StorageService } from "src/storage/storage.service";
+import { FileProcessingJobData } from "src/queue/queue.service";
+import { FileStatus, JobStatus, JobCheckpoint } from "src/generated/client";
+import { Readable } from "stream";
+import { recordWorkerJob } from "./worker-metrics";
 
 /**
  * Worker processor for handling file processing jobs from the queue.
  */
-@Processor('file-processing')
+@Processor("file-processing")
 export class FileProcessor extends WorkerHost {
 	private readonly logger = new Logger(FileProcessor.name);
 
@@ -42,7 +43,13 @@ export class FileProcessor extends WorkerHost {
 			const currentCheckpoint = jobRecord?.checkpoint || JobCheckpoint.INIT;
 			this.logger.log(`Starting from checkpoint: ${currentCheckpoint}`);
 
-			await this.updateJobStatus(fileId, JobStatus.PROCESSING, null, new Date(), null);
+			await this.updateJobStatus(
+				fileId,
+				JobStatus.PROCESSING,
+				null,
+				new Date(),
+				null,
+			);
 
 			await this.prisma.file.update({
 				where: { id: fileId },
@@ -103,7 +110,11 @@ export class FileProcessor extends WorkerHost {
 				processedKey = `processed/${userId}/${fileId}/${processedData.fileName}`;
 				processedBucket = this.storage.getProcessedBucket();
 
-				await this.storage.putObject(processedBucket, processedKey, processedData.buffer);
+				await this.storage.putObject(
+					processedBucket,
+					processedKey,
+					processedData.buffer,
+				);
 
 				await this.saveCheckpoint(fileId, JobCheckpoint.UPLOADED_TO_STORAGE, {
 					processedKey,
@@ -136,14 +147,25 @@ export class FileProcessor extends WorkerHost {
 			const processingTime = Date.now() - startTime;
 
 			// Final checkpoint: Mark as completed
-			await this.updateJobStatus(fileId, JobStatus.COMPLETED, null, null, new Date(), {
-				processingTimeMs: processingTime,
-				size: fileBuffer.length,
-			});
+			await this.updateJobStatus(
+				fileId,
+				JobStatus.COMPLETED,
+				null,
+				null,
+				new Date(),
+				{
+					processingTimeMs: processingTime,
+					size: fileBuffer.length,
+				},
+			);
 
 			await this.saveCheckpoint(fileId, JobCheckpoint.COMPLETED, {});
 
-			this.logger.log(`File ${fileId} processed successfully in ${processingTime}ms`);
+			this.logger.log(
+				`File ${fileId} processed successfully in ${processingTime}ms`,
+			);
+
+			recordWorkerJob("success", processingTime);
 
 			return {
 				success: true,
@@ -152,18 +174,30 @@ export class FileProcessor extends WorkerHost {
 			};
 		} catch (error) {
 			const processingTime = Date.now() - startTime;
-			const errorMessage = error.message || 'Unknown error occurred';
+			const errorMessage = error.message || "Unknown error occurred";
 
-			this.logger.error(`Error processing file ${fileId}: ${errorMessage}`, error.stack);
+			this.logger.error(
+				`Error processing file ${fileId}: ${errorMessage}`,
+				error.stack,
+			);
 
 			await this.prisma.file.update({
 				where: { id: fileId },
 				data: { status: FileStatus.FAILED },
 			});
 
-			await this.updateJobStatus(fileId, JobStatus.FAILED, errorMessage, null, new Date(), {
-				processingTimeMs: processingTime,
-			});
+			await this.updateJobStatus(
+				fileId,
+				JobStatus.FAILED,
+				errorMessage,
+				null,
+				new Date(),
+				{
+					processingTimeMs: processingTime,
+				},
+			);
+
+			recordWorkerJob("failure", processingTime);
 
 			throw error;
 		}
@@ -184,15 +218,15 @@ export class FileProcessor extends WorkerHost {
 		});
 
 		if (!file) {
-			throw new Error('File not found');
+			throw new Error("File not found");
 		}
 
 		const originalName = file.originalName;
-		const extension = originalName.split('.').pop() || 'bin';
+		const extension = originalName.split(".").pop() || "bin";
 
-		if (file.mimeType.startsWith('image/')) {
+		if (file.mimeType.startsWith("image/")) {
 			return this.processImage(buffer, originalName, extension);
-		} else if (file.mimeType.startsWith('text/')) {
+		} else if (file.mimeType.startsWith("text/")) {
 			return this.processText(buffer, originalName, extension);
 		} else {
 			return this.processGeneric(buffer, originalName, extension);
@@ -205,7 +239,7 @@ export class FileProcessor extends WorkerHost {
 		extension: string,
 	): Promise<{ buffer: Buffer; fileName: string }> {
 		const metadata = {
-			type: 'image',
+			type: "image",
 			originalExtension: extension,
 			processedAt: new Date().toISOString(),
 		};
@@ -224,13 +258,13 @@ export class FileProcessor extends WorkerHost {
 		originalName: string,
 		extension: string,
 	): Promise<{ buffer: Buffer; fileName: string }> {
-		const text = buffer.toString('utf-8');
-		const lines = text.split('\n').length;
+		const text = buffer.toString("utf-8");
+		const lines = text.split("\n").length;
 		const words = text.split(/\s+/).filter((w) => w.length > 0).length;
 		const characters = text.length;
 
 		const metadata = {
-			type: 'text',
+			type: "text",
 			originalExtension: extension,
 			statistics: {
 				lines,
@@ -255,7 +289,7 @@ export class FileProcessor extends WorkerHost {
 		extension: string,
 	): Promise<{ buffer: Buffer; fileName: string }> {
 		const metadata = {
-			type: 'generic',
+			type: "generic",
 			originalExtension: extension,
 			size: buffer.length,
 			processedAt: new Date().toISOString(),
@@ -304,7 +338,11 @@ export class FileProcessor extends WorkerHost {
 	 * @param checkpoint - Checkpoint identifier
 	 * @param data - Checkpoint data to persist
 	 */
-	private async saveCheckpoint(fileId: string, checkpoint: JobCheckpoint, data: any) {
+	private async saveCheckpoint(
+		fileId: string,
+		checkpoint: JobCheckpoint,
+		data: any,
+	) {
 		await this.prisma.job.update({
 			where: { fileId },
 			data: {

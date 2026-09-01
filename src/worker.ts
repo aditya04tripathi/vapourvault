@@ -2,13 +2,15 @@ import { NestFactory } from "@nestjs/core";
 import { WorkerModule } from "./worker/worker.module";
 import { Logger } from "nestjs-pino";
 import { initTracing } from "./config/tracing.config";
+import { startWorkerMetricsServer } from "./worker/worker-metrics";
 
-// Initialize tracing before worker starts
 if (process.env.ENABLE_TRACING === "true") {
 	initTracing(process.env.OTEL_SERVICE_NAME ?? "vapourvault-worker");
 }
 
 async function bootstrap() {
+	startWorkerMetricsServer();
+
 	const app = await NestFactory.createApplicationContext(WorkerModule, {
 		bufferLogs: true,
 	});
