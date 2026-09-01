@@ -22,7 +22,6 @@ pnpm-debug.log*
 Dockerfile*
 docker-compose*
 .dockerignore
-observability
 load-tests
 .vscode
 .idea

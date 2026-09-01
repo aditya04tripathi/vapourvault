@@ -1,27 +1,39 @@
-import { NodeSDK } from '@opentelemetry/sdk-node';
-import { getNodeAutoInstrumentations } from '@opentelemetry/auto-instrumentations-node';
-import { JaegerExporter } from '@opentelemetry/exporter-jaeger';
+import { NodeSDK } from "@opentelemetry/sdk-node";
+import { getNodeAutoInstrumentations } from "@opentelemetry/auto-instrumentations-node";
+import { OTLPTraceExporter } from "@opentelemetry/exporter-trace-otlp-http";
+import { resourceFromAttributes } from "@opentelemetry/resources";
+import { ATTR_SERVICE_NAME } from "@opentelemetry/semantic-conventions";
 
-/**
- * Initialize OpenTelemetry tracing with Jaeger exporter
- */
-export function initTracing() {
-	const jaegerExporter = new JaegerExporter({
-		endpoint: process.env.JAEGER_ENDPOINT || 'http://localhost:14268/api/traces',
-		// Alternative: use agent endpoint
-		// host: 'localhost',
-		// port: 6832,
-	});
+function resolveOtlpTracesUrl(): string | null {
+	const endpoint = process.env.OTEL_EXPORTER_OTLP_ENDPOINT?.trim();
+	if (!endpoint) {
+		return null;
+	}
+	if (endpoint.endsWith("/v1/traces")) {
+		return endpoint;
+	}
+	return `${endpoint.replace(/\/$/, "")}/v1/traces`;
+}
+
+export function initTracing(serviceName: string) {
+	const tracesUrl = resolveOtlpTracesUrl();
+	if (!tracesUrl) {
+		return;
+	}
+
+	const traceExporter = new OTLPTraceExporter({ url: tracesUrl });
 
 	const sdk = new NodeSDK({
-		serviceName: 'vaporvault-api',
-		traceExporter: jaegerExporter,
+		resource: resourceFromAttributes({
+			[ATTR_SERVICE_NAME]: serviceName,
+		}),
+		traceExporter,
 		instrumentations: [
 			getNodeAutoInstrumentations({
-				'@opentelemetry/instrumentation-fs': {
-					enabled: false, // Disable file system tracing (too verbose)
+				"@opentelemetry/instrumentation-fs": {
+					enabled: false,
 				},
-				'@opentelemetry/instrumentation-http': {
+				"@opentelemetry/instrumentation-http": {
 					enabled: true,
 				},
 			}),
@@ -30,14 +42,9 @@ export function initTracing() {
 
 	sdk.start();
 
-	// Graceful shutdown
-	process.on('SIGTERM', () => {
+	process.on("SIGTERM", () => {
 		sdk
 			.shutdown()
-			.then(() => console.log('Tracing terminated'))
-			.catch((error) => console.error('Error terminating tracing', error))
-			.finally(() => process.exit(0));
+			.catch((error) => console.error("Error terminating tracing", error));
 	});
-
-	console.log('OpenTelemetry tracing initialized with Jaeger');
 }
